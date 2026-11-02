@@ -1,54 +1,189 @@
-# sv
+# Irishman
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+A micro customer management tool that runs entirely on Cloudflare. One page, one list, a few dialogs.
 
-## Creating a project
+You deploy it to your own Cloudflare account, so your data stays in your own database and nobody else runs it for you.
 
-If you're seeing this, you've probably already done this step. Congrats!
+> **Status: alpha.** It works end to end, but expect rough edges and breaking changes. See [Limitations](#limitations).
 
-```sh
-# create a new project
-npx sv create my-app
-```
+## What it does
 
-To recreate this project with the same configuration:
+- **One list of customers** with company name, email, number of deals, date of the last deal and a note. Details open in dialogs, so the page stays small.
+- **Customer info**: company name, postal code, address, phone, email and other information (free text). The note is edited right in the list.
+- **Deals per customer**: a record of your dealings with the customer. Each deal has a date, an amount and remarks. Newest first. Deleting a deal asks for confirmation.
+- **Filter**: free-text search over every customer field and the remarks of the deals. The filter lives in the URL, so a filtered view can be bookmarked or shared.
+- **Sorting** by company name or by the date of the last deal (click a column header: ascending, descending, then back to newest first). The sort is part of the URL too.
+- **Paging**: the list shows 50 customers per page, with previous and next buttons. The page is part of the URL too.
+- **Email links**: the email in the list is a `mailto:` link.
+- **Blank names are shown as they are**: a customer without a name shows a dimmed "Not set". There is no fallback to another field.
+- **Translations**: the language follows the browser's setting, with a plain JSON file per language. Only English exists so far; see [Adding a language](#adding-a-language).
+- **Sign-in with Cloudflare Access**: no passwords or user tables in the app. The header shows who is signed in, with a logout link.
 
-```sh
-# recreate this project
-bun x sv@1.2.0 create --template minimal --types ts --add prettier eslint vitest="usages:unit,component" playwright="demo:yes" sveltekit-adapter="adapter:cloudflare+cfTarget:workers" drizzle="database:d1" --install bun .
-```
+### What it deliberately does not do
 
-## Adding features
+Irishman is sized by data, not by headcount: it is meant for whatever number of customers and deals a single Cloudflare D1 database can handle (a paid Cloudflare plan stretches that further), and it works just as well for a team of one. Moving the database to something else (Neon, Supabase, ...) or the whole thing to another infrastructure (AWS, ...) is not supported out of the box; do it yourself, or ask for paid customization. To stay small, usual CRM features are left out on purpose: no owner/assignee field, no user management, no quotes or invoices, no country-specific fields such as tax ids (put them in the other information). Everyone sees every customer.
 
-Add features to your project with `sv add`:
+## Tech stack
 
-```sh
-npx sv add
-```
+- [SvelteKit](https://svelte.dev/docs/kit) 3 (Svelte 5) on Cloudflare Workers
+- [Cloudflare D1](https://developers.cloudflare.com/d1/) with [Drizzle ORM](https://orm.drizzle.team/)
+- [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/access-controls/) for sign-in; the Worker verifies the Access JWT with [jose](https://github.com/panva/jose)
+- [Zod](https://zod.dev/) for validating form input
+- [Paraglide JS](https://inlang.com/m/gerre34r/library-inlang-paraglideJs) for translations
+- TypeScript, SCSS, Bun
 
-For example, to add Tailwind CSS:
+## Requirements
 
-```sh
-npx sv add tailwindcss
-```
+- [Bun](https://bun.sh/)
+- Node.js 22.17 or later (Wrangler and SvelteKit need it). `.node-version` pins Node 24 for CI.
+- A Cloudflare account (the free plan is enough to try it)
 
-## Developing
+The npm scripts use `rm -rf`, so use Linux, macOS or WSL.
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-## Building
-
-To create a production version of your app:
+## Run it locally
 
 ```sh
-npm run build
+bun install
+bunx wrangler d1 migrations apply DB --local
+bun run dev
 ```
 
-You can preview the production build with `npm run preview`.
+Open the URL that Vite prints. Locally there is no Cloudflare Access in front of the app, so the sign-in check is skipped and the header shows no user. The local database lives in `.wrangler/` and you can delete it any time (apply the migrations again afterwards).
+
+## Deploy to your Cloudflare account
+
+### What to change in `wrangler.jsonc`
+
+The values committed in this repository belong to the author's own deployment. Replace them with yours:
+
+| Field | Change it to | Needed |
+| --- | --- | --- |
+| `d1_databases[0].database_id` | The id printed by `wrangler d1 create` (step 2) | Always |
+| `d1_databases[0].database_name` | The name you gave the database | Only if it is not `irishman` |
+| `vars.ACCESS_TEAM_DOMAIN` | `https://<team-name>.cloudflareaccess.com`, with no trailing slash (step 5) | Always |
+| `vars.ACCESS_AUD` | The Access application's AUD tag (step 5) | Always |
+| `workers_dev` | `true` | If you use the `workers.dev` URL (step 3) |
+| `name` | Any Worker name | Optional |
+| `preview_urls` | Leave it `false`, so preview URLs do not become a second way in | Never |
+
+Do these in order. Until step 6 is done, the deployed app answers every request with `403`, so nothing is exposed while you set things up.
+
+1. **Log in to Cloudflare**
+
+   ```sh
+   bunx wrangler login
+   ```
+
+2. **Create the database**, then copy the `database_id` it prints into `wrangler.jsonc`.
+
+   ```sh
+   bunx wrangler d1 create irishman
+   ```
+
+3. **Decide where the app will live.**
+   - On `workers.dev`: set `"workers_dev": true` in `wrangler.jsonc`.
+   - On your own domain: keep `"workers_dev": false` and attach the domain to the Worker after step 4 (Workers & Pages, your Worker, Settings, Domains & Routes).
+
+4. **Build and deploy.** `bun run deploy` does everything in one go: it builds the app, applies the database migrations to your remote database, then deploys the Worker.
+
+   ```sh
+   bun run deploy
+   ```
+
+5. **Protect it with Cloudflare Access.** Dashboard labels change from time to time, so look for the names in quotes.
+   - Open Zero Trust and finish the first-time setup. You choose a team name, which becomes `https://<team-name>.cloudflareaccess.com`. The free plan may ask for a payment method.
+   - If people without a Cloudflare account need to sign in, add "One-time PIN" under Settings, Authentication, Login methods. It is shared by every Access application in the account. This is a Cloudflare setting only; Irishman needs no change, because it just verifies the token Access issues, whatever the sign-in method.
+   - Put the Worker behind Access. For `workers.dev`, open the Worker's Settings, Domains & Routes, and manage its Access settings; use the scope "All traffic". For your own domain, create a self-hosted application for that hostname. Add an "Allow" policy that lists the email addresses that may sign in. Enabling a sign-in method does not let anyone in by itself: only the people the policy allows can get through.
+
+6. **Tell the app which Access application to trust.** In `wrangler.jsonc`, set:
+
+   ```jsonc
+   "vars": {
+     "ACCESS_TEAM_DOMAIN": "https://<team-name>.cloudflareaccess.com",
+     "ACCESS_AUD": "<Application Audience (AUD) Tag>"
+   }
+   ```
+
+   The AUD tag is shown in the Access application's settings, under "Application Audience (AUD) Tag". Then deploy again:
+
+   ```sh
+   bun run deploy
+   ```
+
+Open your URL, sign in through Access, and you should see the list.
+
+### Configuration
+
+| Setting | Where | Meaning |
+| --- | --- | --- |
+| `ACCESS_TEAM_DOMAIN` | `wrangler.jsonc` `vars` | Your Zero Trust team domain. Must match the `iss` claim of the Access JWT exactly, so no trailing slash. The Worker also fetches the signing keys from `<ACCESS_TEAM_DOMAIN>/cdn-cgi/access/certs`. |
+| `ACCESS_AUD` | `wrangler.jsonc` `vars` | The Access application's AUD tag. Must match the `aud` claim. |
+| `DB` | `wrangler.jsonc` `d1_databases` | The D1 binding. |
+
+If the team domain or the AUD tag is wrong, every request is rejected with `403`. Run `bunx wrangler tail` while you load the page to see why (for example `unexpected "aud" claim value`).
+
+### Logs
+
+`wrangler.jsonc` turns on [Workers Logs](https://developers.cloudflare.com/workers/observability/logs/workers-logs/) (`observability.enabled`). After a deploy, open your Worker in the dashboard and look under Observability to search the logs later, for example why a request was rejected with `403`. How long logs are kept and how many are stored depends on your Cloudflare plan. Irishman does not write email addresses or tokens to the logs; keep it that way if you add logging.
+
+## Security
+
+- Access is the only door. The Worker verifies the Access token on every request and answers `403` otherwise, so keep `workers_dev` off if you do not use it, and leave `preview_urls` `false`.
+- Keep the Allow policy narrow: list the people or the company domain that should get in, and do not allow "everyone".
+- Irishman stores personal data (names, addresses, phone numbers, emails). It does not handle legal retention or compliance requirements (for example GDPR requests). If you need them, use a service or a change of your own for that part.
+
+## Development
+
+```sh
+bun run dev        # dev server with a local D1 database
+bun run check      # types: wrangler types + svelte-check
+bun run lint       # ESLint
+bun run build      # production build
+bun run preview    # run the build in the Workers runtime (requests need an Access token, so you will see 403)
+bun run deploy     # build, apply migrations to the remote database, then deploy
+bun run test       # unit tests, then end-to-end tests
+```
+
+- `build`, `check` and `gen` delete `.svelte-kit/cloudflare` first. Run `bun run build` again before `preview`.
+- After adding or changing a binding in `wrangler.jsonc`, run `bun run gen` to regenerate `worker-configuration.d.ts`. Changing the values under `vars` needs no regeneration.
+- Local secrets go in `.dev.vars` (git-ignored). Production secrets are set with `wrangler secret put`.
+- The database schema is in `src/lib/server/db/schema.ts`. After changing it, create a migration with `bun run db:generate` (it needs `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_DATABASE_ID` and `CLOUDFLARE_D1_TOKEN` set; see `.env.example`), then apply it with `wrangler d1 migrations apply`.
+
+### Tests
+
+- `bun run test:unit` runs the unit tests (Vitest): the Access token check, the form validation and the URL parsing.
+- `bun run test:e2e` runs the end-to-end tests (Playwright, Chromium) against a dev server with its own empty local database in `.wrangler/e2e`, so your development data is not touched. The first run downloads Chromium.
+
+### Adding a language
+
+All screen text lives in `messages/<language>.json`; the language is chosen from the browser's `Accept-Language` setting, and falls back to English.
+
+1. Add the language code to `locales` in `project.inlang/settings.json`.
+2. Copy `messages/en.json` to `messages/<code>.json` and translate the values. Keep the keys and the `{placeholders}`.
+3. Run `bun run dev`. The files under `src/lib/paraglide/` are generated from the JSON files; do not edit them.
+
+### Notes on the data
+
+- Timestamps (`created_at`, `updated_at`, ...) are stored in UTC. The date of a deal is picked by a person, so it is stored as plain `YYYY-MM-DD` with no time zone.
+- The amount of a deal is stored in minor units (for example cents), assuming two decimal places.
+- `created_by` and `updated_by` hold the Access user id (`sub`), not an email address. They are not shown in the UI.
+
+## Limitations
+
+This is an alpha. Known gaps:
+
+- English UI only. The translation setup is in place, but no other language has been written yet.
+- The currency is not configurable; amounts assume two decimal places and are shown without a currency symbol.
+- A deal cannot be edited after it is added; delete it and add it again.
+- No CSV export, and no file attachments.
+- The email, phone and postal code are not checked for their format, only for their length.
+- The tests cover the main logic and the main screens, not every case. The SQL behind filtering and sorting is only tested through the screens.
+- The app has not had a security review. It relies on Cloudflare Access in front of it and verifies the Access token on every request, but run it with real customer data at your own risk.
+
+## Feedback
+
+Bug reports and ideas are welcome as GitHub issues. Irishman is meant to stay small, so a feature may be declined if it makes the tool bigger than it needs to be.
+
+## License
+
+[MIT](./LICENSE)

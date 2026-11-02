@@ -8,20 +8,20 @@
 		"binding": "ASSETS",
 		"directory": ".svelte-kit/cloudflare"
 	},
-	"workers_dev": false,
+	"workers_dev": true,
 	"preview_urls": false,
 	"observability": {
 		"enabled": true
 	},
 	"vars": {
-		"ACCESS_TEAM_DOMAIN": "",
-		"ACCESS_AUD": ""
+		"ACCESS_TEAM_DOMAIN": "https://alcogy.cloudflareaccess.com",
+		"ACCESS_AUD": "35766f621eca503627c6e78117ca5cd12420758a2d6961b83b3f4234791937a7"
 	},
 	"d1_databases": [
 		{
 			"binding": "DB",
 			"database_name": "irishman",
-			"database_id": "00000000-0000-0000-0000-000000000000",
+			"database_id": "6920d6a4-d4a2-4a15-9927-90efe47079a7",
 			"migrations_dir": "drizzle"
 		}
 	]
