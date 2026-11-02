@@ -1,0 +1,21 @@
+{
+	"extends": "$app/tsconfig",
+	"compilerOptions": {
+		"strict": true,
+		// The only JavaScript under src/ is Paraglide's generated code, which does not type-check
+		// against Cloudflare's Request type. The code itself is TypeScript and is still checked.
+		"checkJs": false,
+		"types": [
+			"$app/types",
+			"node",
+			"./worker-configuration.d.ts"
+		]
+	},
+	"include": [
+		"src",
+		"vite.config.ts",
+		"playwright.config.ts",
+		"e2e",
+		"drizzle.config.ts"
+	]
+}

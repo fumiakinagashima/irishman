@@ -1,0 +1,63 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+
+	"app_title": "IRISHMAN | Micro CRM",
+	"logout": "Logout",
+
+	"customer": "Company",
+	"postal_code": "Postal code",
+	"address": "Address",
+	"phone": "Phone",
+	"email": "Email",
+	"deals": "Deals",
+	"last_deal": "Last deal",
+	"note": "Note",
+	"detail": "Other information",
+	"deal_date": "Date",
+	"amount": "Amount",
+	"remarks": "Remarks",
+	"customer_info": "Customer Info",
+	"deals_title": "Deals - {name}",
+
+	"filter_text": "Filter text",
+	"clear_filter": "Clear search condition",
+
+	"create": "Create",
+
+	"cancel": "Cancel",
+	"ok": "OK",
+	"close": "Close",
+	"add": "Add",
+	"delete": "Delete",
+
+	"input_customer_name": "Input company name",
+
+	"not_set": "Not set",
+	"page_range": "{from}–{to} of {total}",
+	"previous_page": "Previous page",
+	"next_page": "Next page",
+
+	"delete_customer_title": "Delete customer",
+	"delete_customer_confirm": "Delete {name}?",
+	"delete_customer_warning": "This cannot be undone. All deals of this customer will also be deleted.",
+
+	"add_deal_remarks_placeholder": "Remarks",
+	"delete_deal": "Delete deal",
+	"no_deals": "No deals yet.",
+	"delete_deal_title": "Delete deal",
+	"delete_deal_confirm": "Delete the deal of {name}?",
+	"delete_deal_warning": "This cannot be undone.",
+
+	"request_failed": "Request failed.",
+	"network_error": "Network error.",
+	"invalid_request": "Invalid request.",
+	"invalid_date": "Invalid date.",
+	"invalid_amount": "Invalid amount.",
+	"customer_required": "Company name is required.",
+	"customer_name_too_long": "Company name is too long.",
+	"remarks_too_long": "Remarks are too long.",
+	"field_too_long": "Input is too long.",
+	"detail_too_long": "Detail is too long.",
+	"note_too_long": "Note is too long.",
+	"customer_not_found": "Customer not found."
+}

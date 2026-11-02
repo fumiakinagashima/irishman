@@ -1,0 +1,28 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "irishman",
+	"compatibility_date": "2026-11-02",
+	"compatibility_flags": ["nodejs_als"],
+	"main": ".svelte-kit/cloudflare/_worker.js",
+	"assets": {
+		"binding": "ASSETS",
+		"directory": ".svelte-kit/cloudflare"
+	},
+	"workers_dev": false,
+	"preview_urls": false,
+	"observability": {
+		"enabled": true
+	},
+	"vars": {
+		"ACCESS_TEAM_DOMAIN": "",
+		"ACCESS_AUD": ""
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "irishman",
+			"database_id": "00000000-0000-0000-0000-000000000000",
+			"migrations_dir": "drizzle"
+		}
+	]
+}

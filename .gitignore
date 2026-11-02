@@ -1,0 +1,38 @@
+node_modules
+
+# Output
+.output
+.vercel
+.netlify
+.wrangler
+/.svelte-kit
+/build
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.*
+!.env.example
+!.env.test
+
+# Local Wrangler secrets
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# Playwright
+test-results
+playwright-report
+
+AGENTS.md
+CLAUDE.md
+# Paraglide (generated)
+src/lib/paraglide
+project.inlang/cache/
